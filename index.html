@@ -248,7 +248,7 @@
                 <div class="day-title" style="border-bottom: 1px solid var(--cali-red);">${dateString} (Day ${i})</div>
                 <div>
                     <label style="font-size: 11px; color: #aaa;">Leg Type:</label>
-                    <select>
+                    <select class="timeline-select">
                         <option value="arrival" ${defaultLeg === 'Arrival (LAX)' ? 'selected' : ''}>Arrival (LAX)</option>
                         <option value="la" ${defaultLeg === 'Los Angeles' ? 'selected' : ''}>Los Angeles</option>
                         <option value="inland" ${defaultLeg === 'Inland (Sierra)' ? 'selected' : ''}>Inland (Sierra Belt)</option>
@@ -259,7 +259,7 @@
                 </div>
                 <div>
                     <label style="font-size: 11px; color: #aaa;">Transit / Camp Notes:</label>
-                    <textarea placeholder="e.g., Amtrak to Visalia / Hitching Hwy 180 / Bear Canister Drop off..."></textarea>
+                    <textarea class="timeline-textarea" placeholder="e.g., Amtrak to Visalia / Hitching Hwy 180 / Bear Canister Drop off..."></textarea>
                 </div>
             `;
             container.appendChild(card);
@@ -510,6 +510,64 @@
 
             countdownElement.innerHTML = `LAX Departure in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
         }, 1000);
+
+        // --- NEW LOCALSTORAGE PERSISTENCE LOGIC ---
+        function saveState() {
+            const state = {
+                checkboxes: Array.from(document.querySelectorAll('input[type="checkbox"]')).map(cb => cb.checked),
+                legs: Array.from(document.querySelectorAll('.timeline-select')).map(sel => sel.value),
+                notes: Array.from(document.querySelectorAll('.timeline-textarea')).map(ta => ta.value),
+                routeStart: document.getElementById('route-start').value,
+                routeEnd: document.getElementById('route-end').value
+            };
+            localStorage.setItem('caliTripState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('caliTripState');
+            if (saved) {
+                const state = JSON.parse(saved);
+                
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                if (state.checkboxes) {
+                    state.checkboxes.forEach((checked, i) => { 
+                        if (checkboxes[i]) checkboxes[i].checked = checked; 
+                    });
+                }
+                
+                const legs = document.querySelectorAll('.timeline-select');
+                if (state.legs) {
+                    state.legs.forEach((val, i) => { 
+                        if (legs[i]) legs[i].value = val; 
+                    });
+                }
+                
+                const notes = document.querySelectorAll('.timeline-textarea');
+                if (state.notes) {
+                    state.notes.forEach((val, i) => { 
+                        if (notes[i]) notes[i].value = val; 
+                    });
+                }
+
+                if (state.routeStart) document.getElementById('route-start').value = state.routeStart;
+                if (state.routeEnd) document.getElementById('route-end').value = state.routeEnd;
+            }
+        }
+
+        // Listen for changes and input to save state dynamically
+        document.addEventListener('change', (e) => {
+            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+                saveState();
+            }
+        });
+        document.addEventListener('input', (e) => {
+            if (e.target.tagName === 'TEXTAREA') {
+                saveState();
+            }
+        });
+
+        // Load the saved data immediately after DOM setup is complete
+        loadState();
     </script>
 </body>
 </html>
