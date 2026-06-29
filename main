@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>California 18-Day Trip Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-color: #1a252c;
+            --panel-bg: #24343d; 
+            --accent-color: #f3c623;
+            --text-color: #f5f5f5;
+            --border-color: #3a4f5c;
+            --cali-red: #b71c1c;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            position: relative;
+        }
+        h2, h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+        .sidebar {
+            flex: 1;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow-y: auto;
+            max-width: 350px;
+        }
+        .main-content {
+            flex: 3;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .day-card {
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .day-title {
+            font-weight: bold;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        select, textarea {
+            background: #121212;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            border-radius: 4px;
+            width: 100%;
+            resize: none;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 60px;
+            font-size: 12px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+       input[type="checkbox"] {
+            accent-color: var(--accent-color);
+        }
+        
+        /* Tab & Map Styles */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            background: #121212;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: var(--cali-red);
+            color: white;
+            border-color: var(--cali-red);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Packing List</h2>
+        <hr style="border-color: var(--border-color);">
+        
+        <h3>Clothing & Shoes</h3>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> 7x Underwear</label>
+            <label class="checkbox-item"><input type="checkbox"> 7x Socks</label>
+            <label class="checkbox-item"><input type="checkbox"> 7x T-Shirts</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x Trousers</label>
+            <label class="checkbox-item"><input type="checkbox"> 4x Shorts</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x Swimwear</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x Jumper / Fleece / Hoodie</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x Light Windbreaker</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x Trail Shoes</label>
+            <label class="checkbox-item"><input type="checkbox"> 1x City Shoes</label>
+        </div>
+
+        <h3>Camping Gear</h3>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Backpack</label>
+            <label class="checkbox-item"><input type="checkbox"> Tarp (with lines & pegs)</label>
+            <label class="checkbox-item"><input type="checkbox"> Groundsheet</label>
+            <label class="checkbox-item"><input type="checkbox"> Sleeping Bag</label>
+            <label class="checkbox-item"><input type="checkbox"> Sleeping Mat</label>
+            <label class="checkbox-item"><input type="checkbox"> Water Bladder Reservoir</label>
+            <label class="checkbox-item"><input type="checkbox"> Bear Canister (Inland Requirement)</label>
+            <label class="checkbox-item"><input type="checkbox"> Headlamp</label>
+        </div>
+
+        <h3>Tech & Essentials</h3>
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox"> Passport & Travel Docs</label>
+            <label class="checkbox-item"><input type="checkbox"> Film Camera & Spare Film</label>
+            <label class="checkbox-item"><input type="checkbox"> Power Bank</label>
+            <label class="checkbox-item"><input type="checkbox"> Travel Adapter (US Type A/B)</label>
+            <label class="checkbox-item"><input type="checkbox"> Sunglasses & Sun Hat</label>
+            <label class="checkbox-item"><input type="checkbox"> Sunscreen & Toiletries</label>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--cali-red); padding-bottom: 10px; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 28px;" title="California Republic">🐻</span>
+                <h2 style="margin: 0;">California Loop Interactive Timeline</h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="countdown-timer" style="color: var(--accent-color); font-size: 14px; font-weight: bold;">Calculating time remaining...</span>
+                <span style="font-size: 28px;" title="USA">🇺🇸</span>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('timeline')">🗓️ Timeline</button>
+            <button class="tab-btn" onclick="switchTab('map')">🗺️ Route Map</button>
+        </div>
+
+        <div id="timeline-tab" class="tab-content active">
+            <p style="font-size: 14px; color: #aaa; margin: 0 0 15px 0;">Select your leg type and type your transit plan or wild camp coordinates for each of your 18 full days.</p>
+            <div class="timeline" id="timeline-container"></div>
+        </div>
+
+        <div id="map-tab" class="tab-content">
+            <p style="font-size: 14px; color: #aaa; margin: 0 0 15px 0;">Select two places of interest to calculate the fastest driving route, distance, and duration using live routing data.</p>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex-wrap: wrap; align-items: center;">
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 4px;">Start Location:</label>
+                    <select id="route-start"></select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 4px;">End Location:</label>
+                    <select id="route-end"></select>
+                </div>
+                <button class="tab-btn" style="background: var(--cali-red); color: white; border: none; height: 34px; margin-top: 15px; font-weight: bold;" onclick="calculateDrivingRoute()">🚗 Calculate Route</button>
+            </div>
+            
+            <div id="route-results" style="display: none; background: #2a2a2a; border-left: 4px solid var(--accent-color); padding: 10px; margin-bottom: 15px; font-size: 14px; border-radius: 0 4px 4px 0;">
+                Checking route details...
+            </div>
+
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('timeline-container');
+        
+        // Generate cards for all 20 calendar days to include 10-Aug and 11-Aug
+        const startDate = new Date(2026, 6, 23); // Month is 0-indexed (6 = July)
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        for (let i = 1; i <= 20; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (i - 1));
+            
+            const dateString = `${currentDate.getDate()}-${months[currentDate.getMonth()]}`;
+            const card = document.createElement('div');
+            card.className = 'day-card';
+            
+            let defaultLeg = 'Inland (Sierra)';
+            if (i === 1) defaultLeg = 'Arrival (LAX)';
+            if (i >= 2 && i <= 3) defaultLeg = 'Los Angeles';
+            if (i >= 4 && i <= 9) defaultLeg = 'Inland (Sierra)';
+            if (i >= 10 && i <= 13) defaultLeg = 'San Francisco';
+            if (i >= 14 && i <= 19) defaultLeg = 'Coastal (Hwy 1)';
+            if (i === 20) defaultLeg = 'Departure (LAX)';
+
+            card.innerHTML = `
+                <div class="day-title" style="border-bottom: 1px solid var(--cali-red);">${dateString} (Day ${i})</div>
+                <div>
+                    <label style="font-size: 11px; color: #aaa;">Leg Type:</label>
+                    <select>
+                        <option value="arrival" ${defaultLeg === 'Arrival (LAX)' ? 'selected' : ''}>Arrival (LAX)</option>
+                        <option value="la" ${defaultLeg === 'Los Angeles' ? 'selected' : ''}>Los Angeles</option>
+                        <option value="inland" ${defaultLeg === 'Inland (Sierra)' ? 'selected' : ''}>Inland (Sierra Belt)</option>
+                        <option value="sf" ${defaultLeg === 'San Francisco' ? 'selected' : ''}>San Francisco</option>
+                        <option value="coastal" ${defaultLeg === 'Coastal (Hwy 1)' ? 'selected' : ''}>Coastal (Hwy 1)</option>
+                        <option value="departure" ${defaultLeg === 'Departure (LAX)' ? 'selected' : ''}>Departure (LAX)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 11px; color: #aaa;">Transit / Camp Notes:</label>
+                    <textarea placeholder="e.g., Amtrak to Visalia / Hitching Hwy 180 / Bear Canister Drop off..."></textarea>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if(tabName === 'timeline') {
+                document.getElementById('timeline-tab').classList.add('active');
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+            } else {
+                document.getElementById('map-tab').classList.add('active');
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                
+                // Force the map to recalculate its size when unhidden
+                setTimeout(() => { map.invalidateSize(); }, 100);
+            }
+        }
+
+        // Initialize Leaflet Map centered on the California Loop
+        const map = L.map('map').setView([36.7783, -119.4179], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Places of interest coordinate database [lat, lng]
+        const locations = {
+            "Los Angeles": [34.0522, -118.2437],
+            "Santa Barbara": [34.4208, -119.6982],
+            "Santa Clarita": [34.3917, -118.5426],
+            "Bakersfield": [35.3733, -119.0187],
+            "Fresno": [36.7378, -119.7871],
+            "Visalia": [36.3302, -119.2921],
+            "Kings Canyon & Sequoia NP": [36.5620, -118.7674],
+            "Sequoia National Forest": [36.1643, -118.6044],
+            "Sierra National Forest": [37.2625, -119.1670],
+            "Yosemite National Park": [37.8651, -119.5383],
+            "Merced": [37.3022, -120.4830],
+            "Modesto": [37.6393, -120.9970],
+            "San Jose": [37.3387, -121.8853],
+            "San Francisco": [37.7749, -122.4194],
+            "Santa Cruz": [36.9741, -122.0308],
+            "Carmel": [36.5552, -121.9233],
+            "Monterey": [36.6002, -121.8947],
+            "Big Sur": [36.2704, -121.8081]
+        };
+
+        // Standardized emoji markers based on geography and category
+        const locationIcons = {
+            "Los Angeles": "🌟",
+            "San Francisco": "🌉",
+            "Santa Barbara": "🌊",
+            "Santa Cruz": "🌊",
+            "Carmel": "🌊",
+            "Monterey": "🌊",
+            "Big Sur": "🌊",
+            "Kings Canyon & Sequoia NP": "⛰️",
+            "Yosemite National Park": "⛰️",
+            "Sequoia National Forest": "🌲",
+            "Sierra National Forest": "🌲",
+            "Santa Clarita": "🏢",
+            "Bakersfield": "🏢",
+            "Fresno": "🏢",
+            "Visalia": "🏢",
+            "Merced": "🏢",
+            "Modesto": "🏢",
+            "San Jose": "🏢"
+        };
+
+        const startSelect = document.getElementById('route-start');
+        const endSelect = document.getElementById('route-end');
+        
+        // Sort locations programmatically by latitude: North (highest lat) to South (lowest lat)
+        const sortedLocations = Object.entries(locations).sort((a, b) => b[1][0] - a[1][0]);
+
+        // Populate dropdown selectors dynamically using the sorted array
+        sortedLocations.forEach(([name, coords]) => {
+            const icon = locationIcons[name] || "📍";
+            
+            let opt1 = document.createElement('option');
+            opt1.value = name;
+            opt1.textContent = `${icon} ${name}`;
+            startSelect.appendChild(opt1);
+
+            let opt2 = document.createElement('option');
+            opt2.value = name;
+            opt2.textContent = `${icon} ${name}`;
+            endSelect.appendChild(opt2);
+        });
+
+        // Drop custom emoji map markers automatically for every point
+        Object.entries(locations).forEach(([name, coords]) => {
+            const icon = locationIcons[name] || "📍";
+            
+            // Generate a lightweight HTML div container for the emoji marker
+            const emojiMarker = L.divIcon({
+                html: `<div style="font-size: 24px; text-shadow: 0px 0px 4px rgba(0,0,0,0.8); line-height: 1; cursor: pointer;">${icon}</div>`,
+                className: 'custom-emoji-marker',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+                popupAnchor: [0, -12]
+            });
+            
+            L.marker(coords, { icon: emojiMarker }).addTo(map).bindPopup(`<strong>${name}</strong>`);
+        });
+
+        let currentRouteGroup = null;
+
+        // Color palette for different highway systems
+        const routeColors = ['#f3c623', '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#e67e22', '#1abc9c', '#f1c40f', '#ecf0f1'];
+
+        // Query open-source routing engine for live driving stats
+        async function calculateDrivingRoute() {
+            const startName = startSelect.value;
+            const endName = endSelect.value;
+            const resultsDiv = document.getElementById('route-results');
+
+            if (startName === endName) {
+                resultsDiv.style.display = "block";
+                resultsDiv.innerHTML = "⚠️ Start and end locations must be different.";
+                return;
+            }
+
+            const startCoords = locations[startName];
+            const endCoords = locations[endName];
+
+            resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = `Calculating fastest driving route between <strong>${startName}</strong> and <strong>${endName}</strong>...`;
+
+            if (currentRouteGroup) {
+                map.removeLayer(currentRouteGroup);
+            }
+            // Use a FeatureGroup to hold all the different colored line segments
+            currentRouteGroup = L.featureGroup().addTo(map);
+
+            try {
+                const url = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson&steps=true`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!data.routes || data.routes.length === 0) {
+                    resultsDiv.innerHTML = "❌ No driving route found between these points.";
+                    return;
+                }
+
+                const route = data.routes[0];
+                const totalDistanceMeters = route.distance;
+                const distanceMiles = (totalDistanceMeters * 0.000621371).toFixed(1);
+                
+                const totalMinutes = Math.round(route.duration / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                const durationString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                const steps = route.legs[0].steps;
+                const chronologicalSegments = [];
+                let currentSegment = null;
+                const roadColorMap = {};
+                let colorIndex = 0;
+                
+                steps.forEach(step => {
+                    let name = step.ref ? step.ref.split(/[;,]/)[0].trim() : (step.name || "Unnamed Road");
+                    
+                    // Assign a unique color to each road name
+                    if (!roadColorMap[name]) {
+                        roadColorMap[name] = routeColors[colorIndex % routeColors.length];
+                        colorIndex++;
+                    }
+
+                    // Draw the line segment for this specific step in its assigned color
+                    if (step.geometry && step.geometry.coordinates) {
+                        const stepCoords = step.geometry.coordinates.map(c => [c[1], c[0]]);
+                        L.polyline(stepCoords, {
+                            color: roadColorMap[name],
+                            weight: 6,
+                            opacity: 0.9
+                        }).addTo(currentRouteGroup);
+                    }
+                    
+                    if (!currentSegment) {
+                        currentSegment = { name: name, distance: step.distance };
+                    } else if (currentSegment.name === name) {
+                        currentSegment.distance += step.distance;
+                    } else {
+                        chronologicalSegments.push(currentSegment);
+                        currentSegment = { name: name, distance: step.distance };
+                    }
+                });
+                if (currentSegment) {
+                    chronologicalSegments.push(currentSegment);
+                }
+
+                let roadsHtml = "<div style='margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);'><strong style='font-size: 12px; color: #aaa;'>Chronological Route (>5% of journey):</strong><ol style='margin: 5px 0 0 0; padding-left: 25px; font-size: 12px; color: #ccc;'>";
+                
+                let roadsAdded = 0;
+                chronologicalSegments.forEach(segment => {
+                    const miles = (segment.distance * 0.000621371);
+                    const percentage = segment.distance / totalDistanceMeters;
+                    
+                    if (percentage >= 0.05 && segment.name !== "Unnamed Road") { 
+                        // Add a small color swatch circle next to the road name
+                        const swatch = `<span style="display:inline-block; width:10px; height:10px; background-color:${roadColorMap[segment.name]}; border-radius:50%; margin-right:5px;"></span>`;
+                        roadsHtml += `<li>${swatch}<strong>${segment.name}:</strong> ${miles.toFixed(1)} mi (${(percentage * 100).toFixed(0)}%)</li>`;
+                        roadsAdded++;
+                    }
+                });
+                
+                if (roadsAdded === 0) {
+                    roadsHtml += `<li><em>Entirely local roads or minor highways</em></li>`;
+                }
+                
+                roadsHtml += "</ol></div>";
+
+                resultsDiv.innerHTML = `<strong>Fastest Route:</strong> ${startName} to ${endName}<br>
+                                        <strong>Distance:</strong> ${distanceMiles} miles (${Math.round(totalDistanceMeters / 1000)} km)<br>
+                                        <strong>Est. Driving Time:</strong> ${durationString}
+                                        ${roadsHtml}`;
+
+                map.fitBounds(currentRouteGroup.getBounds(), { padding: [30, 30] });
+
+            } catch (error) {
+                resultsDiv.innerHTML = "❌ Routing server error. Check internet connection and try again.";
+                console.error(error);
+            }
+        }
+
+        // Countdown Timer Logic (Target: Aug 11, 2026, 8:55 PM PDT)
+        const targetDate = new Date("August 11, 2026 20:55:00 GMT-0700").getTime();
+        const countdownElement = document.getElementById("countdown-timer");
+
+        const updateCountdown = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                clearInterval(updateCountdown);
+                countdownElement.innerHTML = "FLIGHT DEPARTED";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            countdownElement.innerHTML = `LAX Departure in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }, 1000);
+    </script>
+</body>
+</html>
